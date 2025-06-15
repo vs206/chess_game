@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chess Game</title>
+    <!-- Tailwind CSS for general page styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --bg-color: #e2e8f0; /* Light blue-gray */
+            --container-bg: #ffffff;
+            --container-shadow-color-1: rgba(0, 0, 0, 0.1);
+            --container-shadow-color-2: rgba(0, 0, 0, 0.04);
+            --border-color: #4a5568; /* Dark gray border */
+            --game-info-bg: #f7fafc;
+            --game-info-color: #2d3748; /* gray-800 */
+            --button-bg: #4c51bf; /* indigo-700 */
+            --button-hover-bg: #3b43a8; /* darker indigo */
+            --square-light: #f0d9b5;
+            --square-dark: #b58863;
+            --highlight-selected: rgba(0, 200, 255, 0.6); /* Blue highlight */
+            --highlight-valid-move: rgba(144, 238, 144, 0.6); /* Light green highlight */
+            --heading-color: #indigo-800;
+        }
+
+        /* Dark Theme overrides */
+        body.dark-theme {
+            --bg-color: #1a202c; /* Dark gray */
+            --container-bg: #2d3748; /* Darker gray */
+            --container-shadow-color-1: rgba(0, 0, 0, 0.3);
+            --container-shadow-color-2: rgba(0, 0, 0, 0.15);
+            --border-color: #718096; /* Lighter gray border */
+            --game-info-bg: #4a5568;
+            --game-info-color: #e2e8f0; /* Light blue-gray */
+            --button-bg: #667eea; /* indigo-500 */
+            --button-hover-bg: #5a67d8; /* darker indigo */
+            --square-light: #779556; /* Dark green for light squares */
+            --square-dark: #3b522e; /* Even darker green for dark squares */
+            --highlight-selected: rgba(100, 180, 255, 0.6); /* Lighter blue highlight */
+            --highlight-valid-move: rgba(160, 255, 160, 0.6); /* Lighter green highlight */
+            --heading-color: #cbd5e0; /* light gray for headings */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease;
+        }
+
+        .game-container {
+            background-color: var(--container-bg);
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 20px 25px -5px var(--container-shadow-color-1), 0 10px 10px -5px var(--container-shadow-color-2);
+            padding: 1.5rem; /* p-6 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 100%; /* Ensure it's responsive */
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        canvas {
+            border: 2px solid var(--border-color);
+            background-color: var(--container-bg); /* Canvas background should match container */
+            display: block;
+            margin-bottom: 1.5rem; /* mb-6 */
+            border-radius: 0.5rem; /* rounded-lg */
+            max-width: 100%; /* Ensure responsiveness */
+            height: auto; /* Maintain aspect ratio */
+        }
+
+        .game-info {
+            background-color: var(--game-info-bg);
+            padding: 1rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            margin-top: 1rem;
+            width: 100%;
+            text-align: center;
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            color: var(--game-info-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem; /* space-x-4 */
+            margin-top: 1.5rem; /* mt-6 */
+            justify-content: center;
+            width: 100%;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+        }
+
+        .game-button {
+            background-color: var(--button-bg);
+            color: white;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 9999px; /* rounded-full */
+            font-weight: 600; /* font-semibold */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-grow: 1; /* Allow buttons to grow */
+            max-width: 200px; /* Limit button width */
+        }
+
+        .game-button:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-2px);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .heading-color {
+            color: var(--heading-color);
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) { /* md breakpoint */
+            .game-container {
+                padding: 2.5rem; /* p-10 */
+            }
+            canvas {
+                margin-bottom: 2rem; /* mb-8 */
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-gray-200 p-4">
+
+    <div class="game-container">
+        <h1 class="text-3xl md:text-4xl font-bold heading-color mb-6 rounded-lg">Simple Chess</h1>
+
+        <canvas id="chessBoard" width="480" height="480"></canvas>
+
+        <div class="game-info" id="gameStatus">White's Turn</div>
+
+        <div class="button-group">
+            <button class="game-button" id="newGameButton">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.133a8.964 8.964 0 01-2.38 4.417A8.964 8.964 0 012 10a8 8 0 0016 0 8.964 8.964 0 01-2.38-4.417V3a1 1 0 112 0v.133a10.964 10.964 0 002.58 5.378A9.963 9.963 0 0110 20c-5.125 0-9.336-3.766-9.924-8.625A10.964 10.964 0 000 10a10 10 0 0120 0c0 5.125-3.766 9.336-8.625 9.924A10.964 10.964 0 0010 20a10 10 0 01-10-10zM10 8a2 2 0 100 4 2 2 0 000-4z" clip-rule="evenodd" />
+                </svg>
+                New Game
+            </button>
+            <button class="game-button" id="themeToggleButton">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+                Toggle Theme
+            </button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('chessBoard');
+            const ctx = canvas.getContext('2d');
+            const gameStatus = document.getElementById('gameStatus');
+            const newGameButton = document.getElementById('newGameButton');
+            const themeToggleButton = document.getElementById('themeToggleButton');
+            const body = document.body;
+
+            const boardSize = 8;
+            const squareSize = canvas.width / boardSize;
+
+            // Chess piece SVG data (simplified for common pieces)
+            // Using a single source for piece SVGs for consistency
+            // Source: https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces/Standard_transparent
+            const pieceSVGs = {
+                'K_white': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63L22.5 6M22.5 20.84L22.5 14M22.5 6L20 9L25 9L22.5 6M11.5 30C12.5 31.5 13.5 32 17.5 29.5C21.5 27 22.5 26.5 23.5 29.5C24.5 32.5 27 32.5 27 30C27 28 27.5 26 27.5 26C31.5 23.5 31.5 21.5 30.5 18.5C29.5 15.5 29.5 10.5 29.5 10.5C28.5 7.5 26 5.5 22.5 6C19 5.5 16.5 7.5 15.5 10.5C15.5 10.5 15.5 15.5 14.5 18.5C13.5 21.5 13.5 23.5 17.5 26C17.5 26 18 28 18 30C18 32.5 20.5 32.5 21.5 29.5C22.5 26.5 21.5 27 25.5 29.5C29.5 32 30.5 31.5 31.5 30L31.5 29.5" stroke-dasharray="3 3"/><circle cx="22.5" cy="17.5" r="5" stroke-width="2.5"/><path d="M22.5 40L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/></g></svg>',
+                'Q_white': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 30L12.5 20L18.5 20L18.5 30M27.5 30L27.5 20L33.5 20L33.5 30" stroke-dasharray="3 3"/><circle cx="16" cy="18" r="2.5" fill="#fff" stroke="#000" stroke-width="1.5"/><circle cx="29" cy="18" r="2.5" fill="#fff" stroke="#000" stroke-width="1.5"/><path d="M22.5 25L22.5 10M12.5 20L12.5 10L17.5 10L17.5 20M27.5 20L27.5 10L32.5 10L32.5 20" stroke-dasharray="3 3"/><circle cx="22.5" cy="13" r="2.5" fill="#fff" stroke="#000" stroke-width="1.5"/><circle cx="10" cy="8" r="2.5" fill="#fff" stroke="#000" stroke-width="1.5"/><circle cx="35" cy="8" r="2.5" fill="#fff" stroke="#000" stroke-width="1.5"/><path d="M9 39L36 39" stroke-width="2.5"/><path d="M22.5 39C22.5 39 22.5 37 22.5 30C22.5 25 22.5 20 22.5 20L22.5 10L22.5 20L22.5 30C22.5 37 22.5 39 22.5 39Z" stroke-dasharray="3 3"/><path d="M10 20L35 20L35 30L10 30L10 20" stroke-width="2.5"/><path d="M15 30C15 30 14 27 12.5 25C11 23 10 20 10 20L10 10L15 10L15 20L15 30M30 30C30 30 31 27 32.5 25C34 23 35 20 35 20L35 10L30 10L30 20L30 30" stroke-width="2.5"/></g></svg>',
+                'R_white': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39L36 39L36 36L9 36L9 39Z" fill="#fff" stroke-linejoin="miter"/><path d="M12 36L12 30L33 30L33 36L12 36Z" fill="#fff" stroke-linejoin="miter"/><path d="M13.5 30L13.5 20L17.5 20L17.5 30L13.5 30M27.5 30L27.5 20L31.5 20L31.5 30L27.5 30" stroke-dasharray="3 3"/><path d="M14 14L14 9L20 9L20 14L14 14Z" fill="#fff" stroke-linejoin="miter"/><path d="M25 14L25 9L31 9L31 14L25 14Z" fill="#fff" stroke-linejoin="miter"/><path d="M22.5 30L22.5 10" stroke-dasharray="3 3"/><path d="M10.5 40L34.5 40" stroke-width="2.5"/></g></svg>',
+                'B_white': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="22.5" cy="13.5" r="2.5"/><path d="M22.5 20.5L22.5 29.5M22.5 29.5L22.5 39.5" stroke-dasharray="3 3"/></g><path d="M9 39L36 39" stroke-width="2.5"/><path d="M11.5 30C12.5 31.5 13.5 32 17.5 29.5C21.5 27 22.5 26.5 23.5 29.5C24.5 32.5 27 32.5 27 30C27 28 27.5 26 27.5 26C31.5 23.5 31.5 21.5 30.5 18.5C29.5 15.5 29.5 10.5 29.5 10.5C28.5 7.5 26 5.5 22.5 6C19 5.5 16.5 7.5 15.5 10.5C15.5 10.5 15.5 15.5 14.5 18.5C13.5 21.5 13.5 23.5 17.5 26C17.5 26 18 28 18 30C18 32.5 20.5 32.5 21.5 29.5C22.5 26.5 21.5 27 25.5 29.5C29.5 32 30.5 31.5 31.5 30L31.5 29.5" stroke-dasharray="3 3"/><path d="M22.5 40L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/></g></svg>',
+                'N_white': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 39L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/><path d="M11 36C12 36 13 36.5 14 37C15 37.5 16 37 17 36C18 35 19 33.5 19 33.5" stroke-dasharray="3 3"/><path d="M22.5 30L22.5 15M22.5 15L27.5 15M27.5 15L27.5 25M27.5 25L22.5 25M22.5 25L22.5 30" stroke-dasharray="3 3"/><path d="M12.5 10C12.5 10 10.5 13 10.5 16C10.5 19 12.5 22 12.5 22" stroke-dasharray="3 3"/><path d="M32.5 10C32.5 10 34.5 13 34.5 16C34.5 19 32.5 22 32.5 22" stroke-dasharray="3 3"/><path d="M15 10C15 10 16.5 11.5 17.5 12C18.5 12.5 19.5 12 20.5 11C21.5 10 22.5 8 22.5 8" stroke-dasharray="3 3"/><path d="M30 10C30 10 28.5 11.5 27.5 12C26.5 12.5 25.5 12 24.5 11C23.5 10 22.5 8 22.5 8" stroke-dasharray="3 3"/><path d="M22.5 30L22.5 10M22.5 10L17.5 10M17.5 10L17.5 20M17.5 20L22.5 20M22.5 20L22.5 30" stroke-dasharray="3 3"/><circle cx="22.5" cy="8.5" r="2.5" fill="#fff" stroke="#000" stroke-width="1.5"/></g></svg>',
+                'P_white': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 39L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/><circle cx="22.5" cy="18.5" r="4" fill="#fff" stroke="#000" stroke-width="1.5"/><path d="M22.5 30L22.5 22.5C22.5 22.5 22.5 20.5 22.5 20.5" stroke-dasharray="3 3"/></g></svg>',
+                'K_black': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63L22.5 6M22.5 20.84L22.5 14M22.5 6L20 9L25 9L22.5 6M11.5 30C12.5 31.5 13.5 32 17.5 29.5C21.5 27 22.5 26.5 23.5 29.5C24.5 32.5 27 32.5 27 30C27 28 27.5 26 27.5 26C31.5 23.5 31.5 21.5 30.5 18.5C29.5 15.5 29.5 10.5 29.5 10.5C28.5 7.5 26 5.5 22.5 6C19 5.5 16.5 7.5 15.5 10.5C15.5 10.5 15.5 15.5 14.5 18.5C13.5 21.5 13.5 23.5 17.5 26C17.5 26 18 28 18 30C18 32.5 20.5 32.5 21.5 29.5C22.5 26.5 21.5 27 25.5 29.5C29.5 32 30.5 31.5 31.5 30L31.5 29.5" stroke="#000" fill="#000" stroke-dasharray="3 3"/><circle cx="22.5" cy="17.5" r="5" stroke-width="2.5" fill="#000"/><path d="M22.5 40L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/></g></svg>',
+                'Q_black': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 30L12.5 20L18.5 20L18.5 30M27.5 30L27.5 20L33.5 20L33.5 30" stroke="#000" fill="#000" stroke-dasharray="3 3"/><circle cx="16" cy="18" r="2.5" fill="#000" stroke="#000" stroke-width="1.5"/><circle cx="29" cy="18" r="2.5" fill="#000" stroke="#000" stroke-width="1.5"/><path d="M22.5 25L22.5 10M12.5 20L12.5 10L17.5 10L17.5 20M27.5 20L27.5 10L32.5 10L32.5 20" stroke="#000" fill="#000" stroke-dasharray="3 3"/><circle cx="22.5" cy="13" r="2.5" fill="#000" stroke="#000" stroke-width="1.5"/><circle cx="10" cy="8" r="2.5" fill="#000" stroke="#000" stroke-width="1.5"/><circle cx="35" cy="8" r="2.5" fill="#000" stroke="#000" stroke-width="1.5"/><path d="M9 39L36 39" stroke-width="2.5"/><path d="M22.5 39C22.5 39 22.5 37 22.5 30C22.5 25 22.5 20 22.5 20L22.5 10L22.5 20L22.5 30C22.5 37 22.5 39 22.5 39Z" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M10 20L35 20L35 30L10 30L10 20" stroke-width="2.5"/><path d="M15 30C15 30 14 27 12.5 25C11 23 10 20 10 20L10 10L15 10L15 20L15 30M30 30C30 30 31 27 32.5 25C34 23 35 20 35 20L35 10L30 10L30 20L30 30" stroke-width="2.5"/></g></svg>',
+                'R_black': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39L36 39L36 36L9 36L9 39Z" fill="#000" stroke-linejoin="miter"/><path d="M12 36L12 30L33 30L33 36L12 36Z" fill="#000" stroke-linejoin="miter"/><path d="M13.5 30L13.5 20L17.5 20L17.5 30L13.5 30M27.5 30L27.5 20L31.5 20L31.5 30L27.5 30" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M14 14L14 9L20 9L20 14L14 14Z" fill="#000" stroke-linejoin="miter"/><path d="M25 14L25 9L31 9L31 14L25 14Z" fill="#000" stroke-linejoin="miter"/><path d="M22.5 30L22.5 10" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M10.5 40L34.5 40" stroke-width="2.5"/></g></svg>',
+                'B_black': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="22.5" cy="13.5" r="2.5"/><path d="M22.5 20.5L22.5 29.5M22.5 29.5L22.5 39.5" stroke="#000" fill="#000" stroke-dasharray="3 3"/></g><path d="M9 39L36 39" stroke-width="2.5"/><path d="M11.5 30C12.5 31.5 13.5 32 17.5 29.5C21.5 27 22.5 26.5 23.5 29.5C24.5 32.5 27 32.5 27 30C27 28 27.5 26 27.5 26C31.5 23.5 31.5 21.5 30.5 18.5C29.5 15.5 29.5 10.5 29.5 10.5C28.5 7.5 26 5.5 22.5 6C19 5.5 16.5 7.5 15.5 10.5C15.5 10.5 15.5 15.5 14.5 18.5C13.5 21.5 13.5 23.5 17.5 26C17.5 26 18 28 18 30C18 32.5 20.5 32.5 21.5 29.5C22.5 26.5 21.5 27 25.5 29.5C29.5 32 30.5 31.5 31.5 30L31.5 29.5" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M22.5 40L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/></g></svg>',
+                'N_black': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 39L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/><path d="M11 36C12 36 13 36.5 14 37C15 37.5 16 37 17 36C18 35 19 33.5 19 33.5" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M22.5 30L22.5 15M22.5 15L27.5 15M27.5 15L27.5 25M27.5 25L22.5 25M22.5 25L22.5 30" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M12.5 10C12.5 10 10.5 13 10.5 16C10.5 19 12.5 22 12.5 22" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M32.5 10C32.5 10 34.5 13 34.5 16C34.5 19 32.5 22 32.5 22" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M15 10C15 10 16.5 11.5 17.5 12C18.5 12.5 19.5 12 20.5 11C21.5 10 22.5 8 22.5 8" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M30 10C30 10 28.5 11.5 27.5 12C26.5 12.5 25.5 12 24.5 11C23.5 10 22.5 8 22.5 8" stroke="#000" fill="#000" stroke-dasharray="3 3"/><path d="M22.5 30L22.5 10M22.5 10L17.5 10M17.5 10L17.5 20M17.5 20L22.5 20M22.5 20L22.5 30" stroke="#000" fill="#000" stroke-dasharray="3 3"/><circle cx="22.5" cy="8.5" r="2.5" fill="#000" stroke="#000" stroke-width="1.5"/></g></svg>',
+                'P_black': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 39L22.5 30M10.5 40L34.5 40" stroke-width="2.5"/><circle cx="22.5" cy="18.5" r="4" fill="#000" stroke="#000" stroke-width="1.5"/><path d="M22.5 30L22.5 22.5C22.5 22.5 22.5 20.5 22.5 20.5" stroke="#000" fill="#000" stroke-dasharray="3 3"/></g></svg>'
+            };
+
+
+            let board = [];
+            let selectedPiece = null;
+            let currentPlayer = 'white';
+            let validMoves = [];
+
+            // Piece class
+            class Piece {
+                constructor(type, color, row, col) {
+                    this.type = type; // e.g., 'King', 'Queen', 'Rook', 'Bishop', 'Knight', 'Pawn'
+                    this.color = color; // 'white' or 'black'
+                    this.row = row;
+                    this.col = col;
+                }
+
+                // Method to get the SVG for the piece
+                getSVG() {
+                    const key = `${this.type.charAt(0).toUpperCase()}_${this.color}`;
+                    return pieceSVGs[key];
+                }
+            }
+
+            // Function to initialize the board with pieces
+            function initializeBoard() {
+                board = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+
+                // Place black pieces
+                board[0][0] = new Piece('Rook', 'black', 0, 0);
+                board[0][1] = new Piece('Knight', 'black', 0, 1);
+                board[0][2] = new Piece('Bishop', 'black', 0, 2);
+                board[0][3] = new Piece('Queen', 'black', 0, 3);
+                board[0][4] = new Piece('King', 'black', 0, 4);
+                board[0][5] = new Piece('Bishop', 'black', 0, 5);
+                board[0][6] = new Piece('Knight', 'black', 0, 6);
+                board[0][7] = new Piece('Rook', 'black', 0, 7);
+                for (let i = 0; i < boardSize; i++) {
+                    board[1][i] = new Piece('Pawn', 'black', 1, i);
+                }
+
+                // Place white pieces
+                board[7][0] = new Piece('Rook', 'white', 7, 0);
+                board[7][1] = new Piece('Knight', 'white', 7, 1);
+                board[7][2] = new Piece('Bishop', 'white', 7, 2);
+                board[7][3] = new Piece('Queen', 'white', 7, 3);
+                board[7][4] = new Piece('King', 'white', 7, 4);
+                board[7][5] = new Piece('Bishop', 'white', 7, 5);
+                board[7][6] = new Piece('Knight', 'white', 7, 6);
+                board[7][7] = new Piece('Rook', 'white', 7, 7);
+                for (let i = 0; i < boardSize; i++) {
+                    board[6][i] = new Piece('Pawn', 'white', 6, i);
+                }
+
+                currentPlayer = 'white';
+                selectedPiece = null;
+                validMoves = [];
+                updateGameStatus();
+                drawBoard(); // Ensure board is drawn after initialization
+            }
+
+            // Function to draw the chessboard and pieces
+            function drawBoard() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        // Draw squares
+                        const x = c * squareSize;
+                        const y = r * squareSize;
+                        ctx.fillStyle = (r + c) % 2 === 0 ? getComputedStyle(body).getPropertyValue('--square-light') : getComputedStyle(body).getPropertyValue('--square-dark');
+                        ctx.fillRect(x, y, squareSize, squareSize);
+
+                        // Highlight selected piece square
+                        if (selectedPiece && selectedPiece.row === r && selectedPiece.col === c) {
+                            ctx.fillStyle = getComputedStyle(body).getPropertyValue('--highlight-selected');
+                            ctx.fillRect(x, y, squareSize, squareSize);
+                        }
+
+                        // Highlight valid moves
+                        if (validMoves.some(move => move.row === r && move.col === c)) {
+                            ctx.fillStyle = getComputedStyle(body).getPropertyValue('--highlight-valid-move');
+                            ctx.fillRect(x, y, squareSize, squareSize);
+                        }
+
+                        // Draw pieces
+                        const piece = board[r][c];
+                        if (piece) {
+                            const img = new Image();
+                            const svg = piece.getSVG();
+                            // Adjust SVG to be slightly smaller than the square for padding
+                            const svgSize = squareSize * 0.8;
+                            const offsetX = (squareSize - svgSize) / 2;
+                            const offsetY = (squareSize - svgSize) / 2;
+
+                            img.src = 'data:image/svg+xml;base64,' + btoa(svg);
+                            img.onload = () => {
+                                // Draw image at the center of the square
+                                ctx.drawImage(img, x + offsetX, y + offsetY, svgSize, svgSize);
+                            };
+                            // In case image is already loaded (from cache)
+                            if (img.complete) {
+                                ctx.drawImage(img, x + offsetX, y + offsetY, svgSize, svgSize);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Function to update game status text
+            function updateGameStatus() {
+                gameStatus.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s Turn`;
+            }
+
+            // Calculate valid moves for a given piece (simplified for basic movement)
+            function getValidMoves(piece) {
+                const moves = [];
+                const { type, color, row, col } = piece;
+
+                // Helper to check if a square is valid (within bounds and not occupied by own color)
+                const isValidSquare = (r, c) => {
+                    if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) return false;
+                    const targetPiece = board[r][c];
+                    return !targetPiece || targetPiece.color !== color;
+                };
+
+                // Helper to add a move if valid
+                const addMove = (r, c) => {
+                    if (isValidSquare(r, c)) {
+                        moves.push({ row: r, col: c });
+                    }
+                };
+
+                // Helper for sliding pieces (Rook, Bishop, Queen)
+                const addSlidingMoves = (directions) => {
+                    for (const [dr, dc] of directions) {
+                        let r = row + dr;
+                        let c = col + dc;
+                        while (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
+                            const targetPiece = board[r][c];
+                            if (!targetPiece) {
+                                moves.push({ row: r, col: c });
+                            } else {
+                                if (targetPiece.color !== color) {
+                                    moves.push({ row: r, col: c }); // Can capture opponent's piece
+                                }
+                                break; // Stop if obstacle or capture
+                            }
+                            r += dr;
+                            c += dc;
+                        }
+                    }
+                };
+
+
+                switch (type) {
+                    case 'Pawn':
+                        const direction = color === 'white' ? -1 : 1; // White moves up, Black moves down
+                        const startRow = color === 'white' ? 6 : 1;
+
+                        // Single step forward
+                        if (row + direction >= 0 && row + direction < boardSize && !board[row + direction][col]) {
+                            addMove(row + direction, col);
+                        }
+
+                        // Double step from starting position
+                        if (row === startRow && !board[row + direction][col] &&
+                            (row + 2 * direction >= 0 && row + 2 * direction < boardSize) &&
+                            !board[row + 2 * direction][col]) {
+                            addMove(row + 2 * direction, col);
+                        }
+
+                        // Captures (diagonal)
+                        if (col > 0 && (row + direction >= 0 && row + direction < boardSize) &&
+                            board[row + direction][col - 1] && board[row + direction][col - 1].color !== color) {
+                            addMove(row + direction, col - 1);
+                        }
+                        if (col < boardSize - 1 && (row + direction >= 0 && row + direction < boardSize) &&
+                            board[row + direction][col + 1] && board[row + direction][col + 1].color !== color) {
+                            addMove(row + direction, col + 1);
+                        }
+                        break;
+
+                    case 'Rook':
+                        addSlidingMoves([
+                            [-1, 0], [1, 0], [0, -1], [0, 1] // Up, Down, Left, Right
+                        ]);
+                        break;
+
+                    case 'Knight':
+                        const knightMoves = [
+                            [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+                            [1, -2], [1, 2], [2, -1], [2, 1]
+                        ];
+                        knightMoves.forEach(([dr, dc]) => addMove(row + dr, col + dc));
+                        break;
+
+                    case 'Bishop':
+                        addSlidingMoves([
+                            [-1, -1], [-1, 1], [1, -1], [1, 1] // Diagonals
+                        ]);
+                        break;
+
+                    case 'Queen':
+                        addSlidingMoves([
+                            [-1, 0], [1, 0], [0, -1], [0, 1], // Rook moves
+                            [-1, -1], [-1, 1], [1, -1], [1, 1] // Bishop moves
+                        ]);
+                        break;
+
+                    case 'King':
+                        const kingMoves = [
+                            [-1, -1], [-1, 0], [-1, 1],
+                            [0, -1],           [0, 1],
+                            [1, -1], [1, 0], [1, 1]
+                        ];
+                        kingMoves.forEach(([dr, dc]) => addMove(row + dr, col + dc));
+                        break;
+                }
+                return moves;
+            }
+
+            // Handle clicks on the canvas
+            canvas.addEventListener('click', (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                const clickedCol = Math.floor(x / squareSize);
+                const clickedRow = Math.floor(y / squareSize);
+
+                const clickedPiece = board[clickedRow][clickedCol];
+
+                if (selectedPiece) {
+                    // A piece is already selected, try to move it
+                    const moveFound = validMoves.some(move =>
+                        move.row === clickedRow && move.col === clickedCol
+                    );
+
+                    if (moveFound) {
+                        // Valid move, execute it
+                        board[clickedRow][clickedCol] = selectedPiece;
+                        board[selectedPiece.row][selectedPiece.col] = null;
+                        selectedPiece.row = clickedRow;
+                        selectedPiece.col = clickedCol;
+
+                        // Switch turns
+                        currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                        selectedPiece = null;
+                        validMoves = [];
+                        updateGameStatus();
+                        drawBoard();
+                    } else if (clickedPiece && clickedPiece.color === currentPlayer) {
+                        // Clicked on a piece of the current player's color, re-select
+                        selectedPiece = clickedPiece;
+                        validMoves = getValidMoves(selectedPiece);
+                        drawBoard();
+                    } else {
+                        // Invalid move or clicked on opponent's piece/empty square, deselect
+                        selectedPiece = null;
+                        validMoves = [];
+                        drawBoard();
+                    }
+                } else {
+                    // No piece selected, try to select one
+                    if (clickedPiece && clickedPiece.color === currentPlayer) {
+                        selectedPiece = clickedPiece;
+                        validMoves = getValidMoves(selectedPiece);
+                        drawBoard();
+                    }
+                }
+            });
+
+            // Theme Toggle Functionality
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    body.classList.add('dark-theme');
+                } else {
+                    body.classList.remove('dark-theme');
+                }
+                localStorage.setItem('chessTheme', theme); // Save preference
+                drawBoard(); // Redraw board with new colors
+            }
+
+            themeToggleButton.addEventListener('click', () => {
+                const currentTheme = body.classList.contains('dark-theme') ? 'dark' : 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                applyTheme(newTheme);
+            });
+
+            // Initialize the game board first
+            initializeBoard();
+
+            // Load theme from local storage or default to light after board is initialized
+            const savedTheme = localStorage.getItem('chessTheme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                applyTheme('light'); // Default theme
+            }
+
+            // New Game button functionality
+            newGameButton.addEventListener('click', initializeBoard);
+        };
+    </script>
+</body>
+</html>
